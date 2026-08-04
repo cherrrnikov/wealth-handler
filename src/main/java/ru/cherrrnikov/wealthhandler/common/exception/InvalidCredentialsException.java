@@ -1,0 +1,7 @@
+package ru.cherrrnikov.wealthhandler.common.exception;
+
+public class InvalidCredentialsException extends RuntimeException {
+    public InvalidCredentialsException() {
+        super("Invalid credentials");
+    }
+}
