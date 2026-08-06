@@ -32,3 +32,9 @@ server:
 logging:
   level:
     org.flywaydb: DEBUG
+
+jwt:
+  private-key: classpath:certs/private.pem
+  public-key: classpath:certs/public.pem
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000

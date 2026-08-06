@@ -36,3 +36,6 @@ target/
 # OS
 .DS_Store
 Thumbs.db
+
+# Keys
+src/main/resources/certs/private.pem
