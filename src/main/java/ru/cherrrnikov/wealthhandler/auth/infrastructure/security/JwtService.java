@@ -1,6 +1,7 @@
 package ru.cherrrnikov.wealthhandler.auth.infrastructure.security;
 
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -42,10 +43,7 @@ public class JwtService {
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(jwtProperties.getPublicKey())
-                    .build()
-                    .parseSignedClaims(token);
+            jwtParser().parseSignedClaims(token);
 
             return true;
         } catch (JwtException e) {
@@ -54,11 +52,15 @@ public class JwtService {
     }
 
     public String extractEmail(String token) {
-        return Jwts.parser()
-                .verifyWith(jwtProperties.getPublicKey())
-                .build()
+        return jwtParser()
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+    }
+
+    private JwtParser jwtParser() {
+        return Jwts.parser()
+                .verifyWith(jwtProperties.getPublicKey())
+                .build();
     }
 }
