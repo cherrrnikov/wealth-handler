@@ -9,6 +9,7 @@ import ru.cherrrnikov.wealthhandler.auth.application.port.out.RoleRepository;
 import ru.cherrrnikov.wealthhandler.auth.application.port.out.UserRepository;
 import ru.cherrrnikov.wealthhandler.auth.domain.Role;
 import ru.cherrrnikov.wealthhandler.auth.domain.User;
+import ru.cherrrnikov.wealthhandler.auth.infrastructure.security.JwtService;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.web.dto.AuthResponse;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.web.dto.LoginRequest;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.web.dto.RegisterRequest;
@@ -26,6 +27,8 @@ public class AuthService implements RegisterUseCase, LoginUseCase {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
+    private final JwtService jwtService;
+
     @Override
     public AuthResponse login(LoginRequest loginRequest) {
         User user = userRepository.findByEmail(loginRequest.getEmail())
@@ -35,7 +38,7 @@ public class AuthService implements RegisterUseCase, LoginUseCase {
             throw new InvalidCredentialsException();
         }
 
-        return new AuthResponse("accessToken", "refreshToken");
+        return new AuthResponse(jwtService.generateAccessToken(user), jwtService.generateRefreshToken(user));
     }
 
     @Override
@@ -56,8 +59,8 @@ public class AuthService implements RegisterUseCase, LoginUseCase {
                 .updatedAt(Instant.now())
                 .build();
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        return new AuthResponse("accessToken", "refreshToken");
+        return new AuthResponse(jwtService.generateAccessToken(savedUser), jwtService.generateRefreshToken(savedUser));
     }
 }
