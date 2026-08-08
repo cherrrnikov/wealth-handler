@@ -1,49 +1,55 @@
 package ru.cherrrnikov.wealthhandler.auth.infrastructure.security;
 
 import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.JwtParser;
-import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 import ru.cherrrnikov.wealthhandler.auth.domain.Role;
 import ru.cherrrnikov.wealthhandler.auth.domain.User;
 
-import java.util.Date;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
 public class JwtService {
+    private final JwtEncoder jwtEncoder;
+    private final JwtDecoder jwtDecoder;
     private final JwtProperties jwtProperties;
 
     public String generateAccessToken(User user) {
-        return Jwts.builder()
+        Instant now = Instant.now();
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(user.getEmail())
                 .claim("roles", user.getRoles().stream()
                         .map(Role::getName)
                         .toList()
                 )
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() +
-                        jwtProperties.getAccessTokenExpiration()
-                        ))
-                .signWith(jwtProperties.getPrivateKey())
-                .compact();
+                .issuedAt(now)
+                .expiresAt(now.plusMillis(jwtProperties.getAccessTokenExpiration()))
+                .build();
+
+        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
     public String generateRefreshToken(User user) {
-        return Jwts.builder()
+        Instant now = Instant.now();
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(user.getEmail())
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() +
-                        jwtProperties.getRefreshTokenExpiration()
-                ))
-                .signWith(jwtProperties.getPrivateKey())
-                .compact();
+                .issuedAt(now)
+                .expiresAt(now.plusMillis(jwtProperties.getRefreshTokenExpiration()))
+                .build();
+
+        return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
     }
 
     public boolean validateToken(String token) {
         try {
-            jwtParser().parseSignedClaims(token);
+            jwtDecoder.decode(token);
 
             return true;
         } catch (JwtException e) {
@@ -52,15 +58,6 @@ public class JwtService {
     }
 
     public String extractEmail(String token) {
-        return jwtParser()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
-    }
-
-    private JwtParser jwtParser() {
-        return Jwts.parser()
-                .verifyWith(jwtProperties.getPublicKey())
-                .build();
+        return jwtDecoder.decode(token).getSubject();
     }
 }
