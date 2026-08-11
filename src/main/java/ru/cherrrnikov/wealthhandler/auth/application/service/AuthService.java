@@ -2,6 +2,7 @@ package ru.cherrrnikov.wealthhandler.auth.application.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import ru.cherrrnikov.wealthhandler.auth.application.dto.AuthResult;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.LoginUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.RegisterUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.out.PasswordEncoder;
@@ -10,7 +11,6 @@ import ru.cherrrnikov.wealthhandler.auth.application.port.out.UserRepository;
 import ru.cherrrnikov.wealthhandler.auth.domain.Role;
 import ru.cherrrnikov.wealthhandler.auth.domain.User;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.security.JwtService;
-import ru.cherrrnikov.wealthhandler.auth.infrastructure.web.dto.AuthResponse;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.web.dto.LoginRequest;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.web.dto.RegisterRequest;
 import ru.cherrrnikov.wealthhandler.common.exception.EmailAlreadyExistsException;
@@ -30,7 +30,7 @@ public class AuthService implements RegisterUseCase, LoginUseCase {
     private final JwtService jwtService;
 
     @Override
-    public AuthResponse login(LoginRequest loginRequest) {
+    public AuthResult login(LoginRequest loginRequest) {
         User user = userRepository.findByEmail(loginRequest.getEmail())
                 .orElseThrow(InvalidCredentialsException::new);
 
@@ -38,11 +38,11 @@ public class AuthService implements RegisterUseCase, LoginUseCase {
             throw new InvalidCredentialsException();
         }
 
-        return new AuthResponse(jwtService.generateAccessToken(user), jwtService.generateRefreshToken(user));
+        return new AuthResult(user, jwtService.generateAccessToken(user), jwtService.generateRefreshToken(user));
     }
 
     @Override
-    public AuthResponse register(RegisterRequest registerRequest) {
+    public AuthResult register(RegisterRequest registerRequest) {
         if (userRepository.findByEmail(registerRequest.getEmail()).isPresent()) {
             throw new EmailAlreadyExistsException(registerRequest.getEmail());
         }
@@ -61,6 +61,6 @@ public class AuthService implements RegisterUseCase, LoginUseCase {
 
         User savedUser = userRepository.save(user);
 
-        return new AuthResponse(jwtService.generateAccessToken(savedUser), jwtService.generateRefreshToken(savedUser));
+        return new AuthResult(savedUser, jwtService.generateAccessToken(savedUser), jwtService.generateRefreshToken(savedUser));
     }
 }
