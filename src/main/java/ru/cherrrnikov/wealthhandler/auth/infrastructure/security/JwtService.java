@@ -1,6 +1,6 @@
 package ru.cherrrnikov.wealthhandler.auth.infrastructure.security;
 
-import io.jsonwebtoken.JwtException;
+import org.springframework.security.oauth2.jwt.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
