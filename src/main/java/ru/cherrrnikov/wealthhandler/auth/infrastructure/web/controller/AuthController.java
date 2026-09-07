@@ -6,12 +6,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import ru.cherrrnikov.wealthhandler.auth.application.dto.AuthResult;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.LoginUseCase;
+import ru.cherrrnikov.wealthhandler.auth.application.port.in.RefreshUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.RegisterUseCase;
 import ru.cherrrnikov.wealthhandler.auth.domain.Role;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.security.JwtProperties;
@@ -28,6 +26,7 @@ public class AuthController {
     private final LoginUseCase loginUseCase;
     private final RegisterUseCase registerUseCase;
     private final JwtProperties jwtProperties;
+    private final RefreshUseCase refreshUseCase;
 
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
@@ -39,6 +38,13 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         AuthResult result = loginUseCase.login(loginRequest);
+
+        return buildResponse(result, HttpStatus.OK);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<UserResponse> refresh(@CookieValue("refresh_token") String refreshToken) {
+        AuthResult result = refreshUseCase.refresh(refreshToken);
 
         return buildResponse(result, HttpStatus.OK);
     }

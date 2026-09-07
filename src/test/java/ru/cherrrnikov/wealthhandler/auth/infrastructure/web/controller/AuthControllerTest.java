@@ -1,5 +1,6 @@
 package ru.cherrrnikov.wealthhandler.auth.infrastructure.web.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -9,6 +10,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.cherrrnikov.wealthhandler.auth.application.dto.AuthResult;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.LoginUseCase;
+import ru.cherrrnikov.wealthhandler.auth.application.port.in.RefreshUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.RegisterUseCase;
 import ru.cherrrnikov.wealthhandler.auth.domain.Role;
 import ru.cherrrnikov.wealthhandler.auth.domain.User;
@@ -43,6 +45,9 @@ public class AuthControllerTest {
 
     @MockitoBean
     private JwtProperties jwtProperties;
+
+    @MockitoBean
+    private RefreshUseCase refreshUseCase;
 
     @Test
     void register_shouldReturn201_whenRegistrationSuccessful() throws Exception {
@@ -146,6 +151,37 @@ public class AuthControllerTest {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refresh_shouldReturn200_whenRefreshTokenValid() throws Exception {
+        Role role = Role.builder().id(1L).name("ROLE_USER").build();
+        User user = User.builder()
+                .email("igor@test.com")
+                .username("igor")
+                .roles(Set.of(role))
+                .build();
+
+        when(refreshUseCase.refresh(any(String.class)))
+                .thenReturn(new AuthResult(user, "new-access-token", "new-refresh-token"));
+        when(jwtProperties.getAccessTokenExpiration()).thenReturn(900000L);
+        when(jwtProperties.getRefreshTokenExpiration()).thenReturn(604800000L);
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .cookie(new Cookie("refresh_token", "some-refresh-token")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("igor@test.com"))
+                .andExpect(cookie().exists("access_token"));
+    }
+
+    @Test
+    void refresh_shouldReturn401_whenRefreshTokenInvalid() throws Exception {
+        when(refreshUseCase.refresh(any(String.class)))
+                .thenThrow(new InvalidCredentialsException());
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .cookie(new Cookie("refresh_token", "bad-token")))
                 .andExpect(status().isUnauthorized());
     }
 }

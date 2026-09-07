@@ -19,6 +19,7 @@ import ru.cherrrnikov.wealthhandler.common.exception.InvalidCredentialsException
 import ru.cherrrnikov.wealthhandler.common.exception.RoleNotFoundException;
 
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -157,6 +158,54 @@ public class AuthServiceTest {
 
         assertThrows(InvalidCredentialsException.class, () -> {
             authService.login(loginRequest);
+        });
+    }
+
+    @Test
+    void refresh_shouldReturnNewTokens_whenRefreshTokenValid() {
+        String refreshToken = "valid-refresh-token";
+        Role role = Role.builder().id(1L).name("ROLE_USER").build();
+        User user = User.builder()
+                .email("igor@test.com")
+                .username("igor")
+                .roles(Set.of(role))
+                .build();
+
+        when(jwtService.validateToken(refreshToken)).thenReturn(true);
+        when(jwtService.extractType(refreshToken)).thenReturn("refresh");
+        when(jwtService.extractEmail(refreshToken)).thenReturn("igor@test.com");
+        when(userRepository.findByEmail("igor@test.com")).thenReturn(Optional.of(user));
+        when(jwtService.generateAccessToken(user)).thenReturn("new-access-token");
+        when(jwtService.generateRefreshToken(user)).thenReturn("new-refresh-token");
+
+        AuthResult result = authService.refresh(refreshToken);
+
+        assertNotNull(result);
+        assertEquals("igor@test.com", result.user().getEmail());
+        assertEquals("new-access-token", result.accessToken());
+        assertEquals("new-refresh-token", result.refreshToken());
+    }
+
+    @Test
+    void refresh_shouldThrowException_whenTokenInvalid() {
+        String refreshToken = "invalid-token";
+
+        when(jwtService.validateToken(refreshToken)).thenReturn(false);
+
+        assertThrows(InvalidCredentialsException.class, () -> {
+            authService.refresh(refreshToken);
+        });
+    }
+
+    @Test
+    void refresh_shouldThrowException_whenTokenTypeIsNotRefresh() {
+        String accessToken = "access-token-used-as-refresh";
+
+        when(jwtService.validateToken(accessToken)).thenReturn(true);
+        when(jwtService.extractType(accessToken)).thenReturn("access");
+
+        assertThrows(InvalidCredentialsException.class, () -> {
+            authService.refresh(accessToken);
         });
     }
 }

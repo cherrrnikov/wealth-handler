@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.cherrrnikov.wealthhandler.auth.application.dto.AuthResult;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.LoginUseCase;
+import ru.cherrrnikov.wealthhandler.auth.application.port.in.RefreshUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.RegisterUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.out.PasswordEncoder;
 import ru.cherrrnikov.wealthhandler.auth.application.port.out.RoleRepository;
@@ -24,7 +25,7 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class AuthService implements RegisterUseCase, LoginUseCase {
+public class AuthService implements RegisterUseCase, LoginUseCase, RefreshUseCase {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
@@ -63,5 +64,26 @@ public class AuthService implements RegisterUseCase, LoginUseCase {
         User savedUser = userRepository.save(user);
 
         return new AuthResult(savedUser, jwtService.generateAccessToken(savedUser), jwtService.generateRefreshToken(savedUser));
+    }
+
+    @Override
+    public AuthResult refresh(String refreshToken) {
+        if (!jwtService.validateToken(refreshToken)) {
+            throw new InvalidCredentialsException();
+        }
+
+        if (!"refresh".equals(jwtService.extractType(refreshToken))) {
+            throw new InvalidCredentialsException();
+        }
+
+        String email = jwtService.extractEmail(refreshToken);
+
+        User  user = userRepository.findByEmail(email)
+                .orElseThrow(InvalidCredentialsException::new);
+
+        String newAccessToken = jwtService.generateAccessToken(user);
+        String newRefreshToken = jwtService.generateRefreshToken(user);
+
+        return new AuthResult(user, newAccessToken, newRefreshToken);
     }
 }

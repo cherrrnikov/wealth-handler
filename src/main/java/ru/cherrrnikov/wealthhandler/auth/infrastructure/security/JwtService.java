@@ -28,6 +28,7 @@ public class JwtService {
                         .map(Role::getName)
                         .toList()
                 )
+                .claim("type", "access")
                 .issuedAt(now)
                 .expiresAt(now.plusMillis(jwtProperties.getAccessTokenExpiration()))
                 .build();
@@ -40,6 +41,7 @@ public class JwtService {
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(user.getEmail())
+                .claim("type", "refresh")
                 .issuedAt(now)
                 .expiresAt(now.plusMillis(jwtProperties.getRefreshTokenExpiration()))
                 .build();
@@ -59,5 +61,9 @@ public class JwtService {
 
     public String extractEmail(String token) {
         return jwtDecoder.decode(token).getSubject();
+    }
+
+    public String extractType(String token) {
+        return jwtDecoder.decode(token).getClaim("type");
     }
 }
