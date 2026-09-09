@@ -23,6 +23,7 @@ import ru.cherrrnikov.wealthhandler.common.exception.InvalidCredentialsException
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -183,5 +184,13 @@ public class AuthControllerTest {
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .cookie(new Cookie("refresh_token", "bad-token")))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void logout_shouldReturn204_andClearCookies() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/logout"))
+                .andExpect(status().isNoContent())
+                .andExpect(cookie().maxAge("access_token", 0))
+                .andExpect(cookie().maxAge("refresh_token", 0));
     }
 }

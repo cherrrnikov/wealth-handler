@@ -69,6 +69,21 @@ public class AuthController {
                 .body(body);
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        ResponseCookie accessCookie = buildCookie("access_token", "",
+                Duration.ZERO
+        );
+        ResponseCookie refreshCookie = buildCookie("refresh_token", "",
+                Duration.ZERO
+        );
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT)
+                .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
+                .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
+                .build();
+    }
+
     private ResponseCookie buildCookie(String name, String value, Duration maxAge) {
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
