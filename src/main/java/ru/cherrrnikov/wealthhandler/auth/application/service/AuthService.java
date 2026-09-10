@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.cherrrnikov.wealthhandler.auth.application.dto.AuthResult;
+import ru.cherrrnikov.wealthhandler.auth.application.port.in.GoogleAuthUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.LoginUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.RefreshUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.RegisterUseCase;
