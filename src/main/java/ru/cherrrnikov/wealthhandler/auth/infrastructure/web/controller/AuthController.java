@@ -12,12 +12,11 @@ import ru.cherrrnikov.wealthhandler.auth.application.port.in.LoginUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.RefreshUseCase;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.RegisterUseCase;
 import ru.cherrrnikov.wealthhandler.auth.domain.Role;
-import ru.cherrrnikov.wealthhandler.auth.infrastructure.security.JwtProperties;
+import ru.cherrrnikov.wealthhandler.auth.infrastructure.security.AuthCookieFactory;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.web.dto.LoginRequest;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.web.dto.RegisterRequest;
 import ru.cherrrnikov.wealthhandler.auth.infrastructure.web.dto.UserResponse;
 
-import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -25,7 +24,7 @@ import java.time.Duration;
 public class AuthController {
     private final LoginUseCase loginUseCase;
     private final RegisterUseCase registerUseCase;
-    private final JwtProperties jwtProperties;
+    private final AuthCookieFactory authCookieFactory;
     private final RefreshUseCase refreshUseCase;
 
     @PostMapping("/register")
@@ -50,12 +49,9 @@ public class AuthController {
     }
 
     private ResponseEntity<UserResponse> buildResponse(AuthResult result, HttpStatus status) {
-        ResponseCookie accessCookie = buildCookie("access_token", result.accessToken(),
-                Duration.ofMillis(jwtProperties.getAccessTokenExpiration())
-                );
-        ResponseCookie refreshCookie = buildCookie("refresh_token", result.refreshToken(),
-                Duration.ofMillis(jwtProperties.getRefreshTokenExpiration())
-                );
+        ResponseCookie accessCookie = authCookieFactory.buildAccessTokenCookie(result.accessToken());
+
+        ResponseCookie refreshCookie = authCookieFactory.buildRefreshTokenCookie(result.refreshToken());
 
         UserResponse body = new UserResponse(
                 result.user().getEmail(),
@@ -71,26 +67,12 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
-        ResponseCookie accessCookie = buildCookie("access_token", "",
-                Duration.ZERO
-        );
-        ResponseCookie refreshCookie = buildCookie("refresh_token", "",
-                Duration.ZERO
-        );
+        ResponseCookie accessCookie = authCookieFactory.deleteAccessTokenCookie();
+        ResponseCookie refreshCookie = authCookieFactory.deleteRefreshTokenCookie();
 
         return ResponseEntity.status(HttpStatus.NO_CONTENT)
                 .header(HttpHeaders.SET_COOKIE, accessCookie.toString())
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .build();
-    }
-
-    private ResponseCookie buildCookie(String name, String value, Duration maxAge) {
-        return ResponseCookie.from(name, value)
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(maxAge)
                 .build();
     }
 }
