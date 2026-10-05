@@ -14,13 +14,12 @@ import ru.cherrrnikov.wealthhandler.auth.application.dto.AuthResult;
 import ru.cherrrnikov.wealthhandler.auth.application.port.in.GoogleAuthUseCase;
 
 import java.io.IOException;
-import java.time.Duration;
 
 @Component
 @RequiredArgsConstructor
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     private final GoogleAuthUseCase googleAuthUseCase;
-    private final JwtProperties jwtProperties;
+    private final AuthCookieFactory authCookieFactory;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
@@ -31,24 +30,12 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         AuthResult result = googleAuthUseCase.findOrCreateGoogleUser(email, name);
 
-        ResponseCookie accessCookie = buildCookie("access_token", result.accessToken(),
-                Duration.ofMillis(jwtProperties.getAccessTokenExpiration()));
-        ResponseCookie refreshCookie = buildCookie("refresh_token", result.refreshToken(),
-                Duration.ofMillis(jwtProperties.getRefreshTokenExpiration()));
+        ResponseCookie accessCookie = authCookieFactory.buildAccessTokenCookie(result.accessToken());
+        ResponseCookie refreshCookie = authCookieFactory.buildRefreshTokenCookie(result.refreshToken());
 
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
 
         response.sendRedirect("/");
-    }
-
-    private ResponseCookie buildCookie(String name, String value, Duration maxAge) {
-        return ResponseCookie.from(name, value)
-                .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
-                .path("/")
-                .maxAge(maxAge)
-                .build();
     }
 }

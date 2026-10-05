@@ -1,4 +1,6 @@
 package ru.cherrrnikov.wealthhandler.auth.infrastructure.web.controller;
+import org.springframework.context.annotation.Import;
+import ru.cherrrnikov.wealthhandler.auth.infrastructure.security.AuthCookieFactory;
 import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
@@ -32,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         controllers = AuthController.class,
         excludeAutoConfiguration = OAuth2ClientAutoConfiguration.class
 )
+@Import(AuthCookieFactory.class)
 public class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
