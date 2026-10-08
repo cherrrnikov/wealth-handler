@@ -14,10 +14,14 @@ public abstract class AbstractIntegrationTest {
         postgres.start();
     }
 
+    static final TestJwtKeys jwtKeys = new TestJwtKeys();
+
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("jwt.private-key", jwtKeys::privateKeyLocation);
+        registry.add("jwt.public-key", jwtKeys::publicKeyLocation);
     }
 }
