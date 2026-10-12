@@ -208,4 +208,11 @@ public class AuthServiceTest {
             authService.refresh(accessToken);
         });
     }
+
+    @Test
+    void refresh_shouldThrowInvalidCredentials_whenTokenIsNull() {
+        assertThrows(InvalidCredentialsException.class, () -> authService.refresh(null));
+
+        verifyNoInteractions(jwtService, userRepository);
+    }
 }

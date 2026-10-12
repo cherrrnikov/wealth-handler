@@ -42,7 +42,8 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<UserResponse> refresh(@CookieValue("refresh_token") String refreshToken) {
+    public ResponseEntity<UserResponse> refresh(
+            @CookieValue(value = "refresh_token", required = false) String refreshToken) {
         AuthResult result = refreshUseCase.refresh(refreshToken);
 
         return buildResponse(result, HttpStatus.OK);

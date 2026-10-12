@@ -68,7 +68,7 @@ public class AuthService implements RegisterUseCase, LoginUseCase, RefreshUseCas
 
     @Override
     public AuthResult refresh(String refreshToken) {
-        if (!jwtService.validateToken(refreshToken)) {
+        if (refreshToken == null || !jwtService.validateToken(refreshToken)) {
             throw new InvalidCredentialsException();
         }
 
