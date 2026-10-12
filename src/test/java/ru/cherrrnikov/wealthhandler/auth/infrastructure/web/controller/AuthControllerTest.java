@@ -27,6 +27,7 @@ import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -198,5 +199,33 @@ public class AuthControllerTest {
                 .andExpect(status().isNoContent())
                 .andExpect(cookie().maxAge("access_token", 0))
                 .andExpect(cookie().maxAge("refresh_token", 0));
+    }
+
+    @Test
+    void refresh_shouldReturn401_whenRefreshCookieMissing() throws Exception {
+        when(refreshUseCase.refresh(null))
+                .thenThrow(new InvalidCredentialsException());
+
+        mockMvc.perform(post("/api/v1/auth/refresh"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void unknownPath_shouldReturn404() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/unknown"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void unexpectedException_shouldReturn500_withoutLeakingDetails() throws Exception {
+        when(refreshUseCase.refresh(any(String.class)))
+                .thenThrow(new RuntimeException("secret internal detail"));
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .cookie(new Cookie("refresh_token", "some-token")))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.title").value("Internal Server Error"))
+                .andExpect(jsonPath("$.detail").value("Internal server error"));
     }
 }
